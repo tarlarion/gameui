@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Game UI</title>
+    <link rel="stylesheet" href="./styles/main.css" />
+  </head>
+  <body>
+    <header class="top-bar">
+      <button type="button" class="top-bar-icon top-bar-icon-farm" aria-label="Farm" data-link-key="farm">
+        <span class="top-bar-icon-farm-lift" aria-hidden="true">
+          <span class="top-bar-icon-farm-pivot">
+            <img class="top-bar-icon-img" src="./assets/icons/farm.svg" alt="" />
+          </span>
+        </span>
+      </button>
+      <div class="top-bar-user">
+        <div class="avatar" aria-label="User avatar">
+          <img class="avatar-img" src="./assets/images/avatar-placeholder.png" alt="User avatar" />
+        </div>
+        <span class="username">alex</span>
+      </div>
+      <button type="button" class="top-bar-icon top-bar-icon-settings" aria-label="Settings" data-link-key="settings">
+        <span class="top-bar-icon-settings-lift" aria-hidden="true">
+          <span class="top-bar-icon-settings-pivot">
+            <img class="top-bar-icon-img" src="./assets/icons/settings.svg" alt="" />
+          </span>
+        </span>
+      </button>
+    </header>
+    <div class="topbar-streak-wrap">
+      <span class="user-streak" aria-label="Weekly training streak">
+        <span class="user-streak-dot" aria-hidden="true"></span>
+        <span class="user-streak-dot" aria-hidden="true"></span>
+        <span class="user-streak-dot" aria-hidden="true"></span>
+        <span class="user-streak-dot" aria-hidden="true"></span>
+        <span class="user-streak-dot" aria-hidden="true"></span>
+        <span class="user-streak-dot" aria-hidden="true"></span>
+        <span class="user-streak-dot" aria-hidden="true"></span>
+      </span>
+      <span class="user-streak-caption" id="user-streak-caption">Weekly streek 0/7</span>
+    </div>
+    <main class="layout-main">
+      <section class="speedometer" aria-label="Timer speedometer" data-duration="10">
+        <svg class="speedometer-svg" viewBox="0 0 100 100" role="img">
+          <g class="speedometer-ticks"></g>
+        </svg>
+        <div class="speedometer-center-image" aria-hidden="true">
+          <img class="speedometer-center-bubble" src="./assets/images/bubble.png" alt="" />
+          <span class="speedometer-center-bubble-text">Привет!<br />Я — Трили.<br />Твой напарник<br />для тренировок</span>
+          <img class="speedometer-center-character" src="./assets/images/treelly.png" alt="" />
+        </div>
+        <div class="speedometer-counter">
+          <span class="speedometer-label">До тренировки осталось</span>
+          <span class="speedometer-value" id="speedometer-value">60</span>
+        </div>
+      </section>
+    </main>
+    <footer class="gamebar" aria-label="Bottom navigation">
+      <div class="bottom-bar-item" role="button" tabindex="0" aria-label="Home" data-gamebar-key="home">
+        <img class="bottom-bar-item-icon" src="./assets/images/gamebar-image-memory.png" alt="Memory" />
+        <span class="bottom-bar-item-bonus" aria-hidden="true">+5</span>
+        <span class="bottom-bar-item-counter">12</span>
+        <span class="bottom-bar-item-label">Home</span>
+      </div>
+      <div class="bottom-bar-item" role="button" tabindex="0" aria-label="Tasks" data-gamebar-key="tasks">
+        <img class="bottom-bar-item-icon" src="./assets/images/gamebar-image-reaction.png" alt="Reaction" />
+        <span class="bottom-bar-item-bonus" aria-hidden="true">+5</span>
+        <span class="bottom-bar-item-counter">4</span>
+        <span class="bottom-bar-item-label">Tasks</span>
+      </div>
+      <div class="bottom-bar-item" role="button" tabindex="0" aria-label="Shop" data-gamebar-key="shop">
+        <img class="bottom-bar-item-icon" src="./assets/images/gamebar-image-attention.png" alt="Attention" />
+        <span class="bottom-bar-item-bonus" aria-hidden="true">+5</span>
+        <span class="bottom-bar-item-counter">8</span>
+        <span class="bottom-bar-item-label">Shop</span>
+      </div>
+      <div class="bottom-bar-item" role="button" tabindex="0" aria-label="Guild" data-gamebar-key="guild">
+        <img class="bottom-bar-item-icon" src="./assets/images/gamebar-image-calc.png" alt="Calc" />
+        <span class="bottom-bar-item-bonus" aria-hidden="true">+5</span>
+        <span class="bottom-bar-item-counter">2</span>
+        <span class="bottom-bar-item-label">Guild</span>
+      </div>
+      <div class="bottom-bar-item" role="button" tabindex="0" aria-label="Profile" data-gamebar-key="profile">
+        <img class="bottom-bar-item-icon" src="./assets/images/gamebar-image-fastmem.png" alt="Fastmem" />
+        <span class="bottom-bar-item-bonus" aria-hidden="true">+5</span>
+        <span class="bottom-bar-item-counter">16</span>
+        <span class="bottom-bar-item-label">Profile</span>
+      </div>
+    </footer>
+    <div
+      class="progress-popup"
+      id="progress-popup"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="progress-popup-title"
+      aria-describedby="progress-popup-message"
+      aria-hidden="true"
+      hidden
+    >
+      <div class="progress-popup-backdrop" data-progress-action="close" aria-hidden="true"></div>
+      <div class="progress-popup-panel" role="document">
+        <button
+          type="button"
+          class="progress-popup-close"
+          aria-label="Закрыть"
+          data-progress-action="close"
+        >×</button>
+        <div class="progress-popup-grow-wrap">
+          <div class="progress-popup-points">
+            <span class="progress-popup-points-value" id="progress-popup-points">0</span>
+            <span class="progress-popup-points-label">очков</span>
+          </div>
+          <div
+            class="progress-popup-grove"
+            id="progress-popup-grove"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+            aria-label="Рост прогресса"
+          >
+            <div class="progress-popup-sun-shine" aria-hidden="true">
+              <div class="progress-popup-sun-rays"></div>
+              <div class="progress-popup-sun-core"></div>
+            </div>
+            <div class="progress-popup-grove-scene">
+              <div class="progress-popup-trees" id="progress-popup-trees">
+                <div class="progress-popup-tree progress-popup-tree--1">
+                  <div class="progress-popup-tree-grow">
+                    <div class="progress-popup-tree-foliage progress-popup-tree-foliage--round" aria-hidden="true"></div>
+                    <div class="progress-popup-tree-trunk" aria-hidden="true"></div>
+                  </div>
+                </div>
+                <div class="progress-popup-tree progress-popup-tree--2">
+                  <div class="progress-popup-tree-grow">
+                    <div class="progress-popup-tree-foliage progress-popup-tree-foliage--pine" aria-hidden="true"></div>
+                    <div class="progress-popup-tree-trunk" aria-hidden="true"></div>
+                  </div>
+                </div>
+                <div class="progress-popup-tree progress-popup-tree--3">
+                  <div class="progress-popup-tree-grow">
+                    <div class="progress-popup-tree-foliage progress-popup-tree-foliage--round" aria-hidden="true"></div>
+                    <div class="progress-popup-tree-trunk" aria-hidden="true"></div>
+                  </div>
+                </div>
+                <div class="progress-popup-tree progress-popup-tree--4">
+                  <div class="progress-popup-tree-grow">
+                    <div class="progress-popup-tree-foliage progress-popup-tree-foliage--pine" aria-hidden="true"></div>
+                    <div class="progress-popup-tree-trunk" aria-hidden="true"></div>
+                  </div>
+                </div>
+                <div class="progress-popup-tree progress-popup-tree--5">
+                  <div class="progress-popup-tree-grow">
+                    <div class="progress-popup-tree-foliage progress-popup-tree-foliage--round" aria-hidden="true"></div>
+                    <div class="progress-popup-tree-trunk" aria-hidden="true"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="progress-popup-ground" aria-hidden="true"></div>
+            </div>
+          </div>
+          <span class="progress-popup-grow-percent" id="progress-popup-grow-percent">0%</span>
+        </div>
+        <h2 class="progress-popup-title" id="progress-popup-title">Поздравляем!</h2>
+        <p class="progress-popup-message" id="progress-popup-message">Отличная тренировка!</p>
+        <button type="button" class="progress-popup-cta" data-progress-action="close">Продолжить</button>
+      </div>
+    </div>
+    <script src="./scripts/core/config.js" defer></script>
+    <script src="./scripts/core/main.js" defer></script>
+  </body>
+</html>
