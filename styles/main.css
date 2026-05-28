@@ -1269,6 +1269,56 @@ button.top-bar-icon:focus-visible {
   color: #8de491;
 }
 
+.progress-popup-levels {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.progress-popup-levels-caption {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(189, 240, 190, 0.85);
+}
+
+.progress-popup-levels-window {
+  width: min(100%, 320px);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(17, 23, 17, 0.35);
+  border: 1px solid rgba(125, 207, 126, 0.28);
+}
+
+.progress-popup-level-chip {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(189, 240, 190, 0.55);
+  background: transparent;
+  border: none;
+  transform: scale(0.96);
+  transition: transform 120ms ease, color 120ms ease, border-color 120ms ease, background-color 120ms ease;
+}
+
+.progress-popup-level-chip.is-current {
+  color: #0e1220;
+  background: linear-gradient(180deg, #e7ffe8 0%, #bdf0be 100%);
+  border: 1px solid rgba(189, 240, 190, 0.95);
+  border-radius: 999px;
+  padding: 0 10px;
+  transform: scale(1);
+}
+
 @keyframes progress-points-count-pulse {
   0%,
   100% {

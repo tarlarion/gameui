@@ -449,22 +449,31 @@
     const groveNode = popupNode.querySelector("#progress-popup-grove");
     const treesNode = popupNode.querySelector("#progress-popup-trees");
     const growPercentNode = popupNode.querySelector("#progress-popup-grow-percent");
+    const levelWindowNode = popupNode.querySelector("#progress-popup-levels-window");
+    const levelChipNodes = Array.from(popupNode.querySelectorAll(".progress-popup-level-chip"));
     const growDurationMs = Math.max(0, Number(config.animations.progressRingFillMs) || 1200);
     const countDurationMs = Math.max(0, Number(config.animations.progressCountMs) || growDurationMs);
-    const treeStaggerMs = 80;
     const treeGrowNodes = Array.from(popupNode.querySelectorAll(".progress-popup-tree-grow"));
+    const treeNodes = Array.from(popupNode.querySelectorAll(".progress-popup-tree"));
 
     let lastFocusedNode = null;
     let isOpen = false;
     let lastGrowRatio = 0;
     let lastTargetPoints = 0;
-    let growAnimationTimeoutId = 0;
-    let treeGrowTimeoutIds = [];
+    let lastTargetLevel = 1;
+    let groveAnimationRafId = 0;
+    let levelScrollRafId = 0;
     let pointsCountRafId = 0;
 
-    function clearTreeGrowTimeouts() {
-      treeGrowTimeoutIds.forEach((id) => window.clearTimeout(id));
-      treeGrowTimeoutIds = [];
+    function stopSceneAnimations() {
+      if (groveAnimationRafId) {
+        window.cancelAnimationFrame(groveAnimationRafId);
+        groveAnimationRafId = 0;
+      }
+      if (levelScrollRafId) {
+        window.cancelAnimationFrame(levelScrollRafId);
+        levelScrollRafId = 0;
+      }
     }
 
     function stopPointsCount() {
@@ -511,56 +520,117 @@
       pointsCountRafId = window.requestAnimationFrame(frame);
     }
 
+    function resolveTargetLevel(points, goal, payloadLevel) {
+      const levelFromPayload = Math.floor(Number(payloadLevel));
+      if (Number.isFinite(levelFromPayload) && levelFromPayload > 0) return levelFromPayload;
+      const safeGoal = Math.max(1, Number(goal) || 1);
+      const ratio = Math.max(0, Math.min(1, points / safeGoal));
+      return Math.max(1, Math.round(ratio * 20));
+    }
+
+    function updateLevelWindow(centerLevel) {
+      if (!levelWindowNode || levelChipNodes.length === 0) return;
+      const start = Math.max(1, centerLevel - 2);
+      levelChipNodes.forEach((chipNode, index) => {
+        const levelNumber = start + index;
+        chipNode.textContent = String(levelNumber);
+        chipNode.classList.toggle("is-current", index === 2);
+      });
+    }
+
+    function levelScrollEase(value) {
+      const t = Math.max(0, Math.min(1, value));
+      if (t <= 0.7) return t / 0.7 * 0.85;
+      const slow = (t - 0.7) / 0.3;
+      return 0.85 + (1 - (1 - slow) ** 3) * 0.15;
+    }
+
     function treeTranslateY(growLevel) {
       const clamped = Math.max(0, Math.min(1, growLevel));
       return `${(1 - clamped) * 100}%`;
     }
 
-    function setTreesGrowInstant(level) {
-      const offset = treeTranslateY(level);
-      treeGrowNodes.forEach((node) => {
-        node.style.transition = "none";
-        node.style.transform = `translateY(${offset})`;
-      });
-      if (treesNode) void treesNode.offsetWidth;
-    }
-
-    function applyGrowLevel(ratio, animate) {
-      const level = Math.max(0, Math.min(1, ratio));
-      const percent = Math.round(level * 100);
-
-      if (groveNode) groveNode.setAttribute("aria-valuenow", String(percent));
-      if (growPercentNode) growPercentNode.textContent = `${percent}%`;
-      if (treeGrowNodes.length === 0) return;
-
-      window.clearTimeout(growAnimationTimeoutId);
-      clearTreeGrowTimeouts();
-      groveNode?.classList.remove("is-growing", "is-bloom");
-
-      if (animate) {
-        setTreesGrowInstant(0);
-        groveNode?.classList.add("is-growing");
-        const targetOffset = treeTranslateY(level);
-        const easing = "cubic-bezier(0.22, 1.02, 0.28, 1)";
-
-        treeGrowNodes.forEach((node, index) => {
-          const timeoutId = window.setTimeout(() => {
-            node.style.transition = `transform ${growDurationMs}ms ${easing}`;
-            node.style.transform = `translateY(${targetOffset})`;
-          }, index * treeStaggerMs);
-          treeGrowTimeoutIds.push(timeoutId);
-        });
-
-        const totalMs = growDurationMs + (treeGrowNodes.length - 1) * treeStaggerMs;
-        growAnimationTimeoutId = window.setTimeout(() => {
-          groveNode?.classList.remove("is-growing");
-          if (level >= 1) groveNode?.classList.add("is-bloom");
-        }, totalMs);
-        return;
+    function setTreesFrame(growLevel, flowLevel) {
+      const safeFlow = Math.max(0, Math.min(1, flowLevel));
+      const visibleTrees = Math.min(treeGrowNodes.length, Math.max(2, 2 + Math.round(safeFlow * 3)));
+      if (treesNode) {
+        const shiftX = (1 - safeFlow) * 38;
+        treesNode.style.transform = shiftX === 0 ? "" : `translateX(${shiftX}px)`;
       }
 
-      setTreesGrowInstant(level);
-      if (level >= 1) groveNode?.classList.add("is-bloom");
+      treeGrowNodes.forEach((growNode, index) => {
+        const isVisible = index < visibleTrees;
+        const appearThreshold = index / Math.max(1, treeGrowNodes.length - 1);
+        const appearProgress = Math.max(0, Math.min(1, (safeFlow - appearThreshold * 0.8) / 0.2));
+        const localGrow = isVisible ? growLevel * Math.max(0.2, appearProgress) : 0;
+        growNode.style.transition = "none";
+        growNode.style.transform = `translateY(${treeTranslateY(localGrow)})`;
+        if (treeNodes[index]) treeNodes[index].style.opacity = isVisible ? String(Math.max(0.25, appearProgress)) : "0";
+      });
+    }
+
+    function applyGrowLevel(ratio) {
+      const level = Math.max(0, Math.min(1, ratio));
+      const percent = Math.round(level * 100);
+      if (groveNode) groveNode.setAttribute("aria-valuenow", String(percent));
+      if (growPercentNode) growPercentNode.textContent = `${percent}%`;
+      // flowLevel 1 keeps every visible tree at full height; ratio only controls how many appear.
+      setTreesFrame(level, 1);
+      if (groveNode) {
+        groveNode.classList.remove("is-growing");
+        groveNode.classList.toggle("is-bloom", level >= 1);
+      }
+    }
+
+    function animateLevelWindowToTarget(targetLevel, durationMs) {
+      const startLevel = Math.max(1, targetLevel - 14);
+      const span = Math.max(1, targetLevel - startLevel);
+      const startTime = performance.now();
+
+      function frame(now) {
+        const t = Math.min(1, (now - startTime) / durationMs);
+        const eased = levelScrollEase(t);
+        const current = Math.round(startLevel + span * eased);
+        updateLevelWindow(current);
+        if (t < 1) {
+          levelScrollRafId = window.requestAnimationFrame(frame);
+          return;
+        }
+        updateLevelWindow(targetLevel);
+        levelScrollRafId = 0;
+      }
+
+      updateLevelWindow(startLevel);
+      levelScrollRafId = window.requestAnimationFrame(frame);
+    }
+
+    function animateGroveToTarget(targetRatio, durationMs) {
+      const startTime = performance.now();
+      const safeTarget = Math.max(0, Math.min(1, targetRatio));
+      if (groveNode) {
+        groveNode.classList.add("is-growing");
+        groveNode.classList.remove("is-bloom");
+      }
+
+      function frame(now) {
+        const t = Math.min(1, (now - startTime) / durationMs);
+        const eased = 1 - (1 - t) ** 3;
+        const growLevel = safeTarget * eased;
+        setTreesFrame(growLevel, eased);
+        if (t < 1) {
+          groveAnimationRafId = window.requestAnimationFrame(frame);
+          return;
+        }
+        applyGrowLevel(safeTarget);
+        if (groveNode) {
+          groveNode.classList.remove("is-growing");
+          if (safeTarget >= 1) groveNode.classList.add("is-bloom");
+        }
+        groveAnimationRafId = 0;
+      }
+
+      setTreesFrame(0, 0);
+      groveAnimationRafId = window.requestAnimationFrame(frame);
     }
 
     function applyContent(payload, options) {
@@ -571,12 +641,14 @@
       const rawGoal = Number(data.goal);
       const goal = Number.isFinite(rawGoal) && rawGoal > 0 ? rawGoal : Math.max(1, Number(config.progress.goal) || 100);
       const ratio = Math.max(0, Math.min(1, points / goal));
+      const targetLevel = resolveTargetLevel(points, goal, data.level);
       const title = typeof data.title === "string" ? data.title : config.progress.title;
       const message = typeof data.message === "string" ? data.message : config.progress.message;
       const ctaLabel = typeof data.ctaLabel === "string" ? data.ctaLabel : config.progress.ctaLabel;
 
       lastGrowRatio = ratio;
       lastTargetPoints = points;
+      lastTargetLevel = targetLevel;
 
       if (titleNode && title) titleNode.textContent = title;
       if (messageNode && message) messageNode.textContent = message;
@@ -584,23 +656,29 @@
 
       if (opts.animate === true) {
         setPointsDisplay(0);
-        applyGrowLevel(ratio, true);
+        stopSceneAnimations();
+        animateGroveToTarget(ratio, growDurationMs);
+        animateLevelWindowToTarget(targetLevel, growDurationMs);
         animatePointsCount(points, countDurationMs);
         return;
       }
 
+      stopSceneAnimations();
       stopPointsCount();
       setPointsDisplay(points);
-      applyGrowLevel(ratio, false);
+      applyGrowLevel(ratio);
+      updateLevelWindow(targetLevel);
     }
 
     function startGrowAndCountAnimations() {
       setPointsDisplay(0);
-      setTreesGrowInstant(0);
+      stopSceneAnimations();
+      setTreesFrame(0, 0);
       groveNode?.classList.remove("is-bloom");
       window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() => {
-          applyGrowLevel(lastGrowRatio, true);
+          animateGroveToTarget(lastGrowRatio, growDurationMs);
+          animateLevelWindowToTarget(lastTargetLevel, growDurationMs);
           animatePointsCount(lastTargetPoints, countDurationMs);
         });
       });
@@ -627,8 +705,7 @@
 
     function close() {
       if (!isOpen) return;
-      window.clearTimeout(growAnimationTimeoutId);
-      clearTreeGrowTimeouts();
+      stopSceneAnimations();
       stopPointsCount();
       groveNode?.classList.remove("is-growing", "is-bloom");
       popupNode.classList.add("is-closing");
