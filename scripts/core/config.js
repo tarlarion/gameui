@@ -34,7 +34,6 @@
     },
     progress: {
       screen: "gameui:progressopen",
-      variant: "grove",
       points: 87,
       goal: 100,
       title: "Поздравляем!",

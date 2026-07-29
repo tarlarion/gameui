@@ -23,7 +23,6 @@
     },
     progress: {
       screen: "",
-      variant: "grove",
       points: 0,
       goal: 100,
       title: "Поздравляем!",
@@ -32,7 +31,6 @@
       endpoint: "",
       autoOpen: false,
       openOnTimerFinish: false,
-      variant: "grove",
     },
     animations: {
       farmDurationMs: 620,
@@ -93,7 +91,6 @@
     },
     progress: {
       screen: "",
-      variant: "grove",
       points: 0,
       goal: 100,
       title: "Поздравляем!",
@@ -800,7 +797,7 @@
       });
     }
 
-    if (shouldOpenProgressScreen() && config.progress.variant !== "tiles") open();
+    if (shouldOpenProgressScreen()) open();
   }
 
   applyAnimationConfig();
