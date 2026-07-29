@@ -90,7 +90,7 @@
       </div>
     </footer>
     <div
-      class="progress-popup"
+      class="progress-popup progress-popup--grove"
       id="progress-popup"
       role="dialog"
       aria-modal="true"
@@ -100,85 +100,121 @@
       hidden
     >
       <div class="progress-popup-backdrop" data-progress-action="close" aria-hidden="true"></div>
-      <div class="progress-popup-panel" role="document">
+      <div class="progress-popup-panel progress-popup-panel--pathmap" role="document">
         <button
           type="button"
           class="progress-popup-close"
           aria-label="Закрыть"
           data-progress-action="close"
         >×</button>
-        <div class="progress-popup-grow-wrap">
-          <div class="progress-popup-points">
+        <div class="progress-popup-grow-wrap progress-popup-grow-wrap--pathmap">
+          <div class="progress-popup-points progress-popup-points--overlay">
             <span class="progress-popup-points-value" id="progress-popup-points">0</span>
             <span class="progress-popup-points-label">очков</span>
           </div>
           <div
-            class="progress-popup-grove"
-            id="progress-popup-grove"
-            role="progressbar"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            aria-valuenow="0"
-            aria-label="Рост прогресса"
+            class="progress-popup-pathmap"
+            id="progress-popup-pathmap"
+            role="img"
+            aria-label="Путь по уровням"
           >
-            <div class="progress-popup-sun-shine" aria-hidden="true">
-              <div class="progress-popup-sun-rays"></div>
-              <div class="progress-popup-sun-core"></div>
+            <div class="progress-popup-pathmap-bg" aria-hidden="true">
+              <img
+                class="progress-popup-pathmap-photo"
+                src="./assets/images/bg.png"
+                alt=""
+                width="786"
+                height="1700"
+                decoding="async"
+              />
+              <span class="progress-popup-pathmap-photo-veil"></span>
+              <span class="progress-popup-pathmap-orb progress-popup-pathmap-orb--1"></span>
+              <span class="progress-popup-pathmap-orb progress-popup-pathmap-orb--2"></span>
+              <span class="progress-popup-pathmap-orb progress-popup-pathmap-orb--3"></span>
             </div>
-            <div class="progress-popup-grove-scene">
-              <div class="progress-popup-trees" id="progress-popup-trees">
-                <div class="progress-popup-tree progress-popup-tree--1">
-                  <div class="progress-popup-tree-grow">
-                    <div class="progress-popup-tree-foliage progress-popup-tree-foliage--round" aria-hidden="true"></div>
-                    <div class="progress-popup-tree-trunk" aria-hidden="true"></div>
-                  </div>
-                </div>
-                <div class="progress-popup-tree progress-popup-tree--2">
-                  <div class="progress-popup-tree-grow">
-                    <div class="progress-popup-tree-foliage progress-popup-tree-foliage--pine" aria-hidden="true"></div>
-                    <div class="progress-popup-tree-trunk" aria-hidden="true"></div>
-                  </div>
-                </div>
-                <div class="progress-popup-tree progress-popup-tree--3">
-                  <div class="progress-popup-tree-grow">
-                    <div class="progress-popup-tree-foliage progress-popup-tree-foliage--round" aria-hidden="true"></div>
-                    <div class="progress-popup-tree-trunk" aria-hidden="true"></div>
-                  </div>
-                </div>
-                <div class="progress-popup-tree progress-popup-tree--4">
-                  <div class="progress-popup-tree-grow">
-                    <div class="progress-popup-tree-foliage progress-popup-tree-foliage--pine" aria-hidden="true"></div>
-                    <div class="progress-popup-tree-trunk" aria-hidden="true"></div>
-                  </div>
-                </div>
-                <div class="progress-popup-tree progress-popup-tree--5">
-                  <div class="progress-popup-tree-grow">
-                    <div class="progress-popup-tree-foliage progress-popup-tree-foliage--round" aria-hidden="true"></div>
-                    <div class="progress-popup-tree-trunk" aria-hidden="true"></div>
-                  </div>
-                </div>
-              </div>
-              <div class="progress-popup-ground" aria-hidden="true"></div>
-            </div>
-          </div>
-          <span class="progress-popup-grow-percent" id="progress-popup-grow-percent">0%</span>
-          <div class="progress-popup-levels" id="progress-popup-levels" aria-label="Прогресс по уровням">
-            <span class="progress-popup-levels-caption">Уровень</span>
-            <div class="progress-popup-levels-window" id="progress-popup-levels-window">
-              <span class="progress-popup-level-chip" data-level-slot="0"></span>
-              <span class="progress-popup-level-chip" data-level-slot="1"></span>
-              <span class="progress-popup-level-chip is-current" data-level-slot="2"></span>
-              <span class="progress-popup-level-chip" data-level-slot="3"></span>
-              <span class="progress-popup-level-chip" data-level-slot="4"></span>
-            </div>
+            <svg class="progress-popup-pathmap-svg" viewBox="0 0 280 420" preserveAspectRatio="none" aria-hidden="true">
+              <path
+                class="progress-popup-pathmap-track progress-popup-pathmap-track--future"
+                id="progress-popup-path-future"
+                fill="none"
+                pathLength="100"
+                d=""
+              />
+              <path
+                class="progress-popup-pathmap-track progress-popup-pathmap-track--done"
+                id="progress-popup-path-done"
+                fill="none"
+                pathLength="100"
+                d=""
+              />
+            </svg>
+            <div class="progress-popup-pathmap-nodes" id="progress-popup-pathmap-nodes"></div>
+            <img
+              class="progress-popup-pathmap-hero"
+              id="progress-popup-pathmap-hero"
+              src="./assets/images/treelly.png"
+              alt=""
+              aria-hidden="true"
+              hidden
+            />
           </div>
         </div>
-        <h2 class="progress-popup-title" id="progress-popup-title">Поздравляем!</h2>
-        <p class="progress-popup-message" id="progress-popup-message">Отличная тренировка!</p>
-        <button type="button" class="progress-popup-cta" data-progress-action="close">Продолжить</button>
+        <div class="progress-popup-pathmap-footer">
+          <h2 class="progress-popup-title" id="progress-popup-title">Поздравляем!</h2>
+          <p class="progress-popup-message" id="progress-popup-message">Отличная тренировка!</p>
+          <button type="button" class="progress-popup-cta" data-progress-action="close">Продолжить</button>
+        </div>
+      </div>
+    </div>
+    <div
+      class="progress-screen progress-screen--tiles"
+      id="progress-popup-tiles"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="progress-tiles-title"
+      aria-describedby="progress-tiles-message"
+      aria-hidden="true"
+      hidden
+    >
+      <div class="progress-tiles-scene" id="progress-tiles-scene" aria-label="Путь уровней">
+        <div class="progress-tiles-sky" aria-hidden="true"></div>
+        <div class="progress-tiles-clouds" aria-hidden="true">
+          <span class="progress-tiles-cloud progress-tiles-cloud--1"></span>
+          <span class="progress-tiles-cloud progress-tiles-cloud--2"></span>
+          <span class="progress-tiles-cloud progress-tiles-cloud--3"></span>
+        </div>
+        <div class="progress-tiles-board" id="progress-tiles-board"></div>
+        <img
+          class="progress-tiles-treelly"
+          id="progress-tiles-treelly"
+          src="./assets/images/treelly.png"
+          alt=""
+          aria-hidden="true"
+          hidden
+        />
+      </div>
+      <div class="progress-tiles-ui">
+        <div class="progress-tiles-header">
+          <div class="progress-popup-points">
+            <span class="progress-popup-points-value" id="progress-tiles-points">0</span>
+            <span class="progress-popup-points-label">очков</span>
+          </div>
+          <button
+            type="button"
+            class="progress-tiles-close"
+            aria-label="Закрыть"
+            data-progress-action="close"
+          >×</button>
+        </div>
+        <div class="progress-tiles-footer">
+          <h2 class="progress-popup-title" id="progress-tiles-title">Поздравляем!</h2>
+          <p class="progress-popup-message" id="progress-tiles-message">Отличная тренировка!</p>
+          <button type="button" class="progress-popup-cta" data-progress-action="close">Продолжить</button>
+        </div>
       </div>
     </div>
     <script src="./scripts/core/config.js" defer></script>
     <script src="./scripts/core/main.js" defer></script>
+    <script src="./scripts/ui/progress-tiles.js" defer></script>
   </body>
 </html>

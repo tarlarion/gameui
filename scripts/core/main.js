@@ -23,6 +23,7 @@
     },
     progress: {
       screen: "",
+      variant: "grove",
       points: 0,
       goal: 100,
       title: "Поздравляем!",
@@ -31,6 +32,7 @@
       endpoint: "",
       autoOpen: false,
       openOnTimerFinish: false,
+      variant: "grove",
     },
     animations: {
       farmDurationMs: 620,
@@ -91,6 +93,7 @@
     },
     progress: {
       screen: "",
+      variant: "grove",
       points: 0,
       goal: 100,
       title: "Поздравляем!",
@@ -441,38 +444,65 @@
     const popupNode = document.querySelector("#progress-popup");
     if (!popupNode) return;
 
+    const PATH_VIEW = { w: 280, h: 420 };
+    const PATH_NODES_SVG = [
+      { x: 56, y: 385 },
+      { x: 204, y: 320 },
+      { x: 72, y: 250 },
+      { x: 212, y: 180 },
+      { x: 88, y: 110 },
+      { x: 168, y: 48 },
+    ];
+    const PATH_NODE_COUNT = PATH_NODES_SVG.length;
+    const PATH_NODE_POSITIONS = PATH_NODES_SVG.map((point) => ({
+      x: (point.x / PATH_VIEW.w) * 100,
+      y: (point.y / PATH_VIEW.h) * 100,
+    }));
+
+    function buildSmoothPathThrough(points) {
+      if (!points.length) return "";
+      if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+      let d = `M ${points[0].x} ${points[0].y}`;
+      for (let i = 0; i < points.length - 1; i += 1) {
+        const p0 = points[Math.max(0, i - 1)];
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const p3 = points[Math.min(points.length - 1, i + 2)];
+        const cp1x = p1.x + (p2.x - p0.x) / 6;
+        const cp1y = p1.y + (p2.y - p0.y) / 6;
+        const cp2x = p2.x - (p3.x - p1.x) / 6;
+        const cp2y = p2.y - (p3.y - p1.y) / 6;
+        d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+      }
+      return d;
+    }
+
     const panelNode = popupNode.querySelector(".progress-popup-panel");
     const pointsNode = popupNode.querySelector("#progress-popup-points");
     const titleNode = popupNode.querySelector("#progress-popup-title");
     const messageNode = popupNode.querySelector("#progress-popup-message");
     const ctaNode = popupNode.querySelector(".progress-popup-cta");
-    const groveNode = popupNode.querySelector("#progress-popup-grove");
-    const treesNode = popupNode.querySelector("#progress-popup-trees");
-    const growPercentNode = popupNode.querySelector("#progress-popup-grow-percent");
-    const levelWindowNode = popupNode.querySelector("#progress-popup-levels-window");
-    const levelChipNodes = Array.from(popupNode.querySelectorAll(".progress-popup-level-chip"));
+    const pathmapNode = popupNode.querySelector("#progress-popup-pathmap");
+    const pathFutureNode = popupNode.querySelector("#progress-popup-path-future");
+    const pathDoneNode = popupNode.querySelector("#progress-popup-path-done");
+    const pathNodesWrap = popupNode.querySelector("#progress-popup-pathmap-nodes");
+    const heroNode = popupNode.querySelector("#progress-popup-pathmap-hero");
     const growDurationMs = Math.max(0, Number(config.animations.progressRingFillMs) || 1200);
     const countDurationMs = Math.max(0, Number(config.animations.progressCountMs) || growDurationMs);
-    const treeGrowNodes = Array.from(popupNode.querySelectorAll(".progress-popup-tree-grow"));
-    const treeNodes = Array.from(popupNode.querySelectorAll(".progress-popup-tree"));
 
     let lastFocusedNode = null;
     let isOpen = false;
     let lastGrowRatio = 0;
     let lastTargetPoints = 0;
     let lastTargetLevel = 1;
-    let groveAnimationRafId = 0;
-    let levelScrollRafId = 0;
+    let pathAnimationRafId = 0;
     let pointsCountRafId = 0;
+    let pathNodeElements = [];
 
     function stopSceneAnimations() {
-      if (groveAnimationRafId) {
-        window.cancelAnimationFrame(groveAnimationRafId);
-        groveAnimationRafId = 0;
-      }
-      if (levelScrollRafId) {
-        window.cancelAnimationFrame(levelScrollRafId);
-        levelScrollRafId = 0;
+      if (pathAnimationRafId) {
+        window.cancelAnimationFrame(pathAnimationRafId);
+        pathAnimationRafId = 0;
       }
     }
 
@@ -528,109 +558,116 @@
       return Math.max(1, Math.round(ratio * 20));
     }
 
-    function updateLevelWindow(centerLevel) {
-      if (!levelWindowNode || levelChipNodes.length === 0) return;
-      const start = Math.max(1, centerLevel - 2);
-      levelChipNodes.forEach((chipNode, index) => {
-        const levelNumber = start + index;
-        chipNode.textContent = String(levelNumber);
-        chipNode.classList.toggle("is-current", index === 2);
+    function resolveMapLevel(targetLevel) {
+      return Math.max(1, Math.min(PATH_NODE_COUNT, targetLevel));
+    }
+
+    function buildPathNodes() {
+      if (!pathNodesWrap) return;
+      const pathD = buildSmoothPathThrough(PATH_NODES_SVG);
+      if (pathFutureNode) pathFutureNode.setAttribute("d", pathD);
+      if (pathDoneNode) pathDoneNode.setAttribute("d", pathD);
+
+      pathNodesWrap.innerHTML = "";
+      pathNodeElements = PATH_NODE_POSITIONS.map((pos, index) => {
+        const node = document.createElement("div");
+        node.className = "progress-popup-pathmap-node";
+        node.style.left = `${pos.x}%`;
+        node.style.top = `${pos.y}%`;
+        node.dataset.level = String(index + 1);
+        node.innerHTML = `<span class="progress-popup-pathmap-node-label">${index + 1}</span>`;
+        pathNodesWrap.appendChild(node);
+        return node;
       });
     }
 
-    function levelScrollEase(value) {
-      const t = Math.max(0, Math.min(1, value));
-      if (t <= 0.7) return t / 0.7 * 0.85;
-      const slow = (t - 0.7) / 0.3;
-      return 0.85 + (1 - (1 - slow) ** 3) * 0.15;
+    function placeHeroAt(index, visible) {
+      if (!heroNode || !PATH_NODE_POSITIONS[index]) return;
+      const pos = PATH_NODE_POSITIONS[index];
+      heroNode.style.left = `${pos.x}%`;
+      heroNode.style.top = `${pos.y}%`;
+      heroNode.hidden = !visible;
+      heroNode.classList.toggle("is-visible", visible);
     }
 
-    function treeTranslateY(growLevel) {
-      const clamped = Math.max(0, Math.min(1, growLevel));
-      return `${(1 - clamped) * 100}%`;
-    }
-
-    function setTreesFrame(growLevel, flowLevel) {
-      const safeFlow = Math.max(0, Math.min(1, flowLevel));
-      const visibleTrees = Math.min(treeGrowNodes.length, Math.max(2, 2 + Math.round(safeFlow * 3)));
-      if (treesNode) {
-        const shiftX = (1 - safeFlow) * 38;
-        treesNode.style.transform = shiftX === 0 ? "" : `translateX(${shiftX}px)`;
-      }
-
-      treeGrowNodes.forEach((growNode, index) => {
-        const isVisible = index < visibleTrees;
-        const appearThreshold = index / Math.max(1, treeGrowNodes.length - 1);
-        const appearProgress = Math.max(0, Math.min(1, (safeFlow - appearThreshold * 0.8) / 0.2));
-        const localGrow = isVisible ? growLevel * Math.max(0.2, appearProgress) : 0;
-        growNode.style.transition = "none";
-        growNode.style.transform = `translateY(${treeTranslateY(localGrow)})`;
-        if (treeNodes[index]) treeNodes[index].style.opacity = isVisible ? String(Math.max(0.25, appearProgress)) : "0";
-      });
-    }
-
-    function applyGrowLevel(ratio) {
+    function setPathProgress(ratio, mapLevel) {
       const level = Math.max(0, Math.min(1, ratio));
-      const percent = Math.round(level * 100);
-      if (groveNode) groveNode.setAttribute("aria-valuenow", String(percent));
-      if (growPercentNode) growPercentNode.textContent = `${percent}%`;
-      // flowLevel 1 keeps every visible tree at full height; ratio only controls how many appear.
-      setTreesFrame(level, 1);
-      if (groveNode) {
-        groveNode.classList.remove("is-growing");
-        groveNode.classList.toggle("is-bloom", level >= 1);
-      }
-    }
+      const cappedMapLevel = resolveMapLevel(mapLevel);
+      const doneRatio = (cappedMapLevel - 1) / Math.max(1, PATH_NODE_COUNT - 1);
 
-    function animateLevelWindowToTarget(targetLevel, durationMs) {
-      const startLevel = Math.max(1, targetLevel - 14);
-      const span = Math.max(1, targetLevel - startLevel);
-      const startTime = performance.now();
-
-      function frame(now) {
-        const t = Math.min(1, (now - startTime) / durationMs);
-        const eased = levelScrollEase(t);
-        const current = Math.round(startLevel + span * eased);
-        updateLevelWindow(current);
-        if (t < 1) {
-          levelScrollRafId = window.requestAnimationFrame(frame);
-          return;
-        }
-        updateLevelWindow(targetLevel);
-        levelScrollRafId = 0;
+      if (pathDoneNode) {
+        const dash = Math.max(0, Math.min(100, doneRatio * 100));
+        pathDoneNode.style.strokeDasharray = "100";
+        pathDoneNode.style.strokeDashoffset = String(100 - dash);
       }
 
-      updateLevelWindow(startLevel);
-      levelScrollRafId = window.requestAnimationFrame(frame);
+      pathNodeElements.forEach((node, index) => {
+        const nodeLevel = index + 1;
+        node.classList.toggle("is-done", nodeLevel < cappedMapLevel);
+        node.classList.toggle("is-current", nodeLevel === cappedMapLevel);
+        node.classList.toggle("is-locked", nodeLevel > cappedMapLevel);
+        node.classList.add("is-visible");
+      });
+
+      placeHeroAt(cappedMapLevel - 1, true);
+      pathmapNode?.classList.toggle("is-complete", level >= 1);
     }
 
-    function animateGroveToTarget(targetRatio, durationMs) {
+    function animatePathToTarget(targetRatio, targetLevel, durationMs) {
       const startTime = performance.now();
       const safeTarget = Math.max(0, Math.min(1, targetRatio));
-      if (groveNode) {
-        groveNode.classList.add("is-growing");
-        groveNode.classList.remove("is-bloom");
-      }
+      const mapLevel = resolveMapLevel(targetLevel);
+      const fromIndex = Math.max(0, mapLevel - 2);
+      const toIndex = Math.max(0, mapLevel - 1);
+      const fromPos = PATH_NODE_POSITIONS[fromIndex];
+      const toPos = PATH_NODE_POSITIONS[toIndex];
+
+      pathmapNode?.classList.add("is-building");
+      pathmapNode?.classList.remove("is-complete");
+      pathNodeElements.forEach((node) => {
+        node.classList.remove("is-visible", "is-done", "is-current", "is-locked");
+      });
+      if (pathDoneNode) pathDoneNode.style.strokeDashoffset = "100";
+      placeHeroAt(fromIndex, true);
 
       function frame(now) {
         const t = Math.min(1, (now - startTime) / durationMs);
         const eased = 1 - (1 - t) ** 3;
-        const growLevel = safeTarget * eased;
-        setTreesFrame(growLevel, eased);
+        const revealCount = Math.max(1, Math.round(eased * mapLevel));
+        const doneRatio = ((mapLevel - 1) * eased) / Math.max(1, PATH_NODE_COUNT - 1);
+
+        if (pathDoneNode) pathDoneNode.style.strokeDashoffset = String(100 - doneRatio * 100);
+
+        pathNodeElements.forEach((node, index) => {
+          const nodeLevel = index + 1;
+          const visible = nodeLevel <= revealCount || (t > 0.55 && nodeLevel <= PATH_NODE_COUNT);
+          node.classList.toggle("is-visible", visible);
+          node.classList.toggle("is-done", nodeLevel < mapLevel && t > 0.35);
+          node.classList.toggle("is-current", nodeLevel === mapLevel && t > 0.55);
+          node.classList.toggle("is-locked", nodeLevel > mapLevel && t > 0.55);
+        });
+
+        if (heroNode && fromPos && toPos) {
+          const heroT = Math.max(0, Math.min(1, (t - 0.45) / 0.5));
+          const lift = heroT > 0 && heroT < 1 ? Math.sin(heroT * Math.PI) * 10 : 0;
+          heroNode.style.left = `${fromPos.x + (toPos.x - fromPos.x) * heroT}%`;
+          heroNode.style.top = `calc(${fromPos.y + (toPos.y - fromPos.y) * heroT}% - ${lift}px)`;
+          heroNode.hidden = false;
+          heroNode.classList.toggle("is-jumping", heroT > 0 && heroT < 1);
+        }
+
         if (t < 1) {
-          groveAnimationRafId = window.requestAnimationFrame(frame);
+          pathAnimationRafId = window.requestAnimationFrame(frame);
           return;
         }
-        applyGrowLevel(safeTarget);
-        if (groveNode) {
-          groveNode.classList.remove("is-growing");
-          if (safeTarget >= 1) groveNode.classList.add("is-bloom");
-        }
-        groveAnimationRafId = 0;
+
+        setPathProgress(safeTarget, mapLevel);
+        pathmapNode?.classList.remove("is-building");
+        heroNode?.classList.remove("is-jumping");
+        pathAnimationRafId = 0;
       }
 
-      setTreesFrame(0, 0);
-      groveAnimationRafId = window.requestAnimationFrame(frame);
+      pathAnimationRafId = window.requestAnimationFrame(frame);
     }
 
     function applyContent(payload, options) {
@@ -653,12 +690,12 @@
       if (titleNode && title) titleNode.textContent = title;
       if (messageNode && message) messageNode.textContent = message;
       if (ctaNode && ctaLabel) ctaNode.textContent = ctaLabel;
+      if (pathNodeElements.length === 0) buildPathNodes();
 
       if (opts.animate === true) {
         setPointsDisplay(0);
         stopSceneAnimations();
-        animateGroveToTarget(ratio, growDurationMs);
-        animateLevelWindowToTarget(targetLevel, growDurationMs);
+        animatePathToTarget(ratio, targetLevel, growDurationMs);
         animatePointsCount(points, countDurationMs);
         return;
       }
@@ -666,19 +703,17 @@
       stopSceneAnimations();
       stopPointsCount();
       setPointsDisplay(points);
-      applyGrowLevel(ratio);
-      updateLevelWindow(targetLevel);
+      setPathProgress(ratio, targetLevel);
     }
 
     function startGrowAndCountAnimations() {
       setPointsDisplay(0);
       stopSceneAnimations();
-      setTreesFrame(0, 0);
-      groveNode?.classList.remove("is-bloom");
+      if (pathNodeElements.length === 0) buildPathNodes();
+      pathmapNode?.classList.remove("is-complete");
       window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() => {
-          animateGroveToTarget(lastGrowRatio, growDurationMs);
-          animateLevelWindowToTarget(lastTargetLevel, growDurationMs);
+          animatePathToTarget(lastGrowRatio, lastTargetLevel, growDurationMs);
           animatePointsCount(lastTargetPoints, countDurationMs);
         });
       });
@@ -707,7 +742,7 @@
       if (!isOpen) return;
       stopSceneAnimations();
       stopPointsCount();
-      groveNode?.classList.remove("is-growing", "is-bloom");
+      pathmapNode?.classList.remove("is-building", "is-complete");
       popupNode.classList.add("is-closing");
       const onAnimationEnd = (event) => {
         if (event.target !== panelNode) return;
@@ -733,6 +768,8 @@
       if (isOpen) close();
       else open(payload);
     }
+
+    buildPathNodes();
 
     popupNode.querySelectorAll("[data-progress-action='close']").forEach((node) => {
       node.addEventListener("click", () => close());
@@ -763,7 +800,7 @@
       });
     }
 
-    if (shouldOpenProgressScreen()) open();
+    if (shouldOpenProgressScreen() && config.progress.variant !== "tiles") open();
   }
 
   applyAnimationConfig();

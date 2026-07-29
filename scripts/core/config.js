@@ -34,13 +34,14 @@
     },
     progress: {
       screen: "gameui:progressopen",
+      variant: "grove",
       points: 87,
       goal: 100,
       title: "Поздравляем!",
       message: "Отличная тренировка!",
       ctaLabel: "Продолжить",
       endpoint: "",
-      autoOpen: false,
+      autoOpen: true,
       openOnTimerFinish: false,
     },
     animations: {
