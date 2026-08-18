@@ -51,6 +51,16 @@ Core behavior implementation:
       profile: 16
     }
   },
+  loading: {
+    status: "Loading…",
+    emulateMs: 1600
+  },
+  start: {
+    title: "Ready to train?",
+    message: "Treelly is your training partner. Read the brief, then tap when you want to begin.",
+    ctaLabel: "Let's start",
+    autoOpen: true
+  },
   progress: {
     screen: "",
     points: 0,
@@ -222,6 +232,18 @@ The popup dispatches the following events on `document`:
 - `gameui:progressopen` — fired after the popup is shown.
 - `gameui:progressclose` — fired after the close animation completes.
 - `gameui:timerfinish` — fired by the speedometer when the countdown hits zero (the popup listens to this if `openOnTimerFinish` is enabled, but you can subscribe to it for any purpose).
+- `gameui:startopen` — fired when the post-loading start screen is shown.
+- `gameui:start` — fired when the user taps **Let's start**.
+- `gameui:startclose` — fired after the start screen close animation.
+
+### Boot flow
+
+1. `#loading-screen` is visible on first paint (`body.boot-locked` hides the game chrome).
+2. After `loading.emulateMs` and image preload, loading fades out.
+3. `#start-screen` shows `start.title`, `start.message`, and `start.ctaLabel` (**Let's start**).
+4. The CTA starts the speedometer session and unlocks the main UI.
+
+Skip the gate with `start.autoOpen: false`. Open it later via `window.GameUI.showStart()`.
 
 ### DOM contract
 

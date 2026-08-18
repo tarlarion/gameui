@@ -21,6 +21,16 @@
       days: 0,
       endpoint: "",
     },
+    loading: {
+      status: "Loading…",
+      emulateMs: 1600,
+    },
+    start: {
+      title: "Ready to train?",
+      message: "Treelly is your training partner. Read the brief, then tap when you want to begin.",
+      ctaLabel: "Let's start",
+      autoOpen: true,
+    },
     progress: {
       screen: "",
       points: 0,
@@ -89,6 +99,18 @@
       endpoint: "",
       ...(window.GAME_UI_CONFIG?.streak || {}),
     },
+    loading: {
+      status: "Loading…",
+      emulateMs: 1600,
+      ...(window.GAME_UI_CONFIG?.loading || {}),
+    },
+    start: {
+      title: "Ready to train?",
+      message: "Treelly is your training partner. Read the brief, then tap when you want to begin.",
+      ctaLabel: "Let's start",
+      autoOpen: true,
+      ...(window.GAME_UI_CONFIG?.start || {}),
+    },
     progress: {
       screen: "",
       points: 0,
@@ -149,6 +171,8 @@
     );
     root.style.setProperty("--anim-progress-open", durationMs(config.animations.progressOpenMs, "320ms"));
     root.style.setProperty("--anim-progress-close", durationMs(config.animations.progressCloseMs, "220ms"));
+    root.style.setProperty("--anim-boot-open", durationMs(config.animations.progressOpenMs, "320ms"));
+    root.style.setProperty("--anim-boot-close", durationMs(config.animations.progressCloseMs, "220ms"));
     root.style.setProperty("--anim-progress-ring-fill", durationMs(config.animations.progressRingFillMs, "1200ms"));
     root.style.setProperty("--anim-progress-count", durationMs(config.animations.progressCountMs, "1200ms"));
   }
@@ -800,11 +824,147 @@
     if (shouldOpenProgressScreen()) open();
   }
 
+  function setupBootScreens() {
+    const loadingNode = document.querySelector("#loading-screen");
+    const startNode = document.querySelector("#start-screen");
+    const statusNode = loadingNode?.querySelector("#loading-status");
+    const progressFillNode = loadingNode?.querySelector("#loading-progress-fill");
+    const titleNode = startNode?.querySelector("#start-screen-title");
+    const messageNode = startNode?.querySelector("#start-screen-message");
+    const ctaNode = startNode?.querySelector("[data-start-action='begin']");
+
+    let isStartOpen = false;
+    let hasStarted = false;
+
+    function applyStartContent(payload) {
+      const data = payload && typeof payload === "object" ? payload : {};
+      const title = typeof data.title === "string" ? data.title : config.start.title;
+      const message = typeof data.message === "string" ? data.message : config.start.message;
+      const ctaLabel = typeof data.ctaLabel === "string" ? data.ctaLabel : config.start.ctaLabel;
+      if (titleNode && title) titleNode.textContent = title;
+      if (messageNode && message) messageNode.textContent = message;
+      if (ctaNode && ctaLabel) ctaNode.textContent = ctaLabel;
+      if (statusNode && config.loading.status) statusNode.textContent = config.loading.status;
+    }
+
+    function hideLoading() {
+      if (!loadingNode) return Promise.resolve();
+      loadingNode.classList.add("is-closing");
+      loadingNode.setAttribute("aria-busy", "false");
+      return new Promise((resolve) => {
+        window.setTimeout(() => {
+          loadingNode.hidden = true;
+          loadingNode.setAttribute("aria-hidden", "true");
+          resolve();
+        }, Math.max(0, Number(config.animations.progressCloseMs) || 220));
+      });
+    }
+
+    function openStart(payload) {
+      applyStartContent(payload);
+      if (!startNode || isStartOpen) return;
+      startNode.hidden = false;
+      startNode.setAttribute("aria-hidden", "false");
+      startNode.classList.remove("is-closing");
+      document.body.classList.add("boot-locked", "start-screen-open");
+      isStartOpen = true;
+      document.dispatchEvent(new CustomEvent("gameui:startopen"));
+      window.requestAnimationFrame(() => {
+        if (ctaNode) ctaNode.focus();
+      });
+    }
+
+    function closeStart() {
+      if (!startNode || !isStartOpen) return;
+      startNode.classList.add("is-closing");
+      startNode.setAttribute("aria-hidden", "true");
+      isStartOpen = false;
+      window.setTimeout(() => {
+        startNode.hidden = true;
+        document.body.classList.remove("boot-locked", "start-screen-open");
+        document.dispatchEvent(new CustomEvent("gameui:startclose"));
+      }, Math.max(0, Number(config.animations.progressCloseMs) || 220));
+    }
+
+    function beginSession() {
+      if (hasStarted) return;
+      hasStarted = true;
+      closeStart();
+      void setupSpeedometer();
+      document.dispatchEvent(new CustomEvent("gameui:start"));
+    }
+
+    function emulateLoading() {
+      const durationMs = Math.max(0, Number(config.loading.emulateMs) || 0);
+      if (!progressFillNode || durationMs <= 0) {
+        if (progressFillNode) progressFillNode.style.width = "100%";
+        return Promise.resolve();
+      }
+
+      const start = performance.now();
+      return new Promise((resolve) => {
+        function frame(now) {
+          const t = Math.min(1, (now - start) / durationMs);
+          const eased = 1 - (1 - t) ** 3;
+          progressFillNode.style.width = `${Math.round(eased * 100)}%`;
+          if (t < 1) {
+            window.requestAnimationFrame(frame);
+            return;
+          }
+          resolve();
+        }
+        window.requestAnimationFrame(frame);
+      });
+    }
+
+    function preloadImages() {
+      const sources = [
+        "./assets/images/bg.png",
+        "./assets/images/treelly.png",
+        "./assets/images/bubble.png",
+      ];
+      return Promise.all(
+        sources.map(
+          (src) =>
+            new Promise((resolve) => {
+              const image = new Image();
+              image.onload = () => resolve();
+              image.onerror = () => resolve();
+              image.src = src;
+            }),
+        ),
+      );
+    }
+
+    applyStartContent();
+    ctaNode?.addEventListener("click", () => beginSession());
+
+    window.GameUI = window.GameUI || {};
+    window.GameUI.showStart = openStart;
+    window.GameUI.hideStart = closeStart;
+    window.GameUI.beginSession = beginSession;
+
+    if (config.start.autoOpen === false) {
+      if (loadingNode) {
+        loadingNode.hidden = true;
+        loadingNode.setAttribute("aria-busy", "false");
+      }
+      document.body.classList.remove("boot-locked", "start-screen-open");
+      void setupSpeedometer();
+      return;
+    }
+
+    Promise.all([emulateLoading(), preloadImages()]).then(() => {
+      openStart();
+      return hideLoading();
+    });
+  }
+
   applyAnimationConfig();
   setupTopbarButton(".top-bar-icon-farm", "is-jumping");
   setupTopbarButton(".top-bar-icon-settings", "is-jumping");
   void setupStreak();
   void setupGamebar();
-  void setupSpeedometer();
   setupProgressPopup();
+  setupBootScreens();
 })();

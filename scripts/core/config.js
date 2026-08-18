@@ -32,15 +32,25 @@
       days: 7,
       endpoint: "",
     },
+    loading: {
+      status: "Loading…",
+      emulateMs: 1600,
+    },
+    start: {
+      title: "Ready to train?",
+      message: "Treelly is your training partner. Read the brief, then tap when you want to begin.",
+      ctaLabel: "Let's start",
+      autoOpen: true,
+    },
     progress: {
-      screen: "gameui:progressopen",
+      screen: "",
       points: 87,
       goal: 100,
       title: "Поздравляем!",
       message: "Отличная тренировка!",
       ctaLabel: "Продолжить",
       endpoint: "",
-      autoOpen: true,
+      autoOpen: false,
       openOnTimerFinish: false,
     },
     animations: {

@@ -24,6 +24,8 @@
   --anim-finish-arc-stroke-width: 3px;
   --anim-progress-open: 320ms;
   --anim-progress-close: 220ms;
+  --anim-boot-open: 320ms;
+  --anim-boot-close: 220ms;
   --anim-progress-ring-fill: 1200ms;
   --anim-progress-count: 1200ms;
 }
@@ -46,6 +48,164 @@ body {
 body {
   display: flex;
   flex-direction: column;
+}
+
+body.boot-locked {
+  overflow: hidden;
+}
+
+body.boot-locked > .top-bar,
+body.boot-locked > .topbar-streak-wrap,
+body.boot-locked > .layout-main,
+body.boot-locked > .gamebar {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.boot-overlay[hidden] {
+  display: none;
+}
+
+.boot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  background:
+    linear-gradient(180deg, rgba(14, 18, 32, 0.55) 0%, rgba(14, 18, 32, 0.72) 100%),
+    url("../assets/images/bg.png") center center / cover no-repeat;
+}
+
+.boot-overlay--loading {
+  z-index: 120;
+}
+
+.boot-overlay.is-closing {
+  animation: boot-overlay-out var(--anim-boot-close) ease forwards;
+}
+
+.boot-overlay-panel {
+  width: min(100%, 360px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.boot-overlay--start {
+  z-index: 110;
+  place-items: center;
+}
+
+.boot-overlay-panel--start {
+  gap: 16px;
+  width: min(100%, 360px);
+  padding: 8px;
+  animation: boot-overlay-in var(--anim-boot-open) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.boot-overlay-status {
+  margin: 0 0 20px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #e8e8f0;
+}
+
+.boot-overlay-progress {
+  width: min(220px, 70vw);
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(143, 224, 168, 0.16);
+  border: 1px solid rgba(143, 224, 168, 0.22);
+}
+
+.boot-overlay-progress-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4a9d5c 0%, #8fe0a8 100%);
+  box-shadow: 0 0 12px rgba(143, 224, 168, 0.45);
+}
+
+.boot-overlay-title {
+  margin: 0;
+  font-family: var(--font-accent);
+  font-size: clamp(28px, 8vw, 36px);
+  font-weight: 700;
+  line-height: 1.15;
+  color: #e8e8f0;
+}
+
+.boot-overlay-message {
+  margin: 0;
+  max-width: 28rem;
+  font-size: 16px;
+  line-height: 1.45;
+  color: #c8c8d8;
+}
+
+.boot-overlay-cta {
+  min-width: 200px;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 12px 28px;
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #f4fdf6;
+  background: linear-gradient(160deg, #5a9f6b 0%, #3d7a4d 42%, #2d5c3a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  cursor: pointer;
+  text-shadow: 0 1px 1px rgba(10, 30, 16, 0.35);
+  box-shadow:
+    0 2px 0 #1a3d28,
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 0 20px rgba(74, 157, 92, 0.25);
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+.boot-overlay-cta:hover,
+.boot-overlay-cta:focus-visible {
+  background: linear-gradient(160deg, #6cb37d 0%, #4a8f5c 45%, #356d44 100%);
+  transform: translateY(-1px);
+  outline: none;
+  box-shadow:
+    0 3px 0 #1a3d28,
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 28px rgba(143, 224, 168, 0.3);
+}
+
+.boot-overlay-cta:focus-visible {
+  outline: 2px solid #8fe0a8;
+  outline-offset: 3px;
+}
+
+@keyframes boot-overlay-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes boot-overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 .font-accent {

@@ -6,7 +6,38 @@
     <title>Game UI</title>
     <link rel="stylesheet" href="./styles/main.css" />
   </head>
-  <body>
+  <body class="boot-locked">
+    <div
+      class="boot-overlay boot-overlay--loading"
+      id="loading-screen"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div class="boot-overlay-panel boot-overlay-panel--loading">
+        <p class="boot-overlay-status" id="loading-status">Loading…</p>
+        <div class="boot-overlay-progress" aria-hidden="true">
+          <span class="boot-overlay-progress-fill" id="loading-progress-fill"></span>
+        </div>
+      </div>
+    </div>
+    <div
+      class="boot-overlay boot-overlay--start"
+      id="start-screen"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="start-screen-title"
+      aria-describedby="start-screen-message"
+      hidden
+    >
+      <div class="boot-overlay-panel boot-overlay-panel--start" role="document">
+        <h1 class="boot-overlay-title" id="start-screen-title">Ready to train?</h1>
+        <p class="boot-overlay-message" id="start-screen-message">
+          Treelly is your training partner. Read the brief, then tap when you want to begin.
+        </p>
+        <button type="button" class="boot-overlay-cta" data-start-action="begin">Let's start</button>
+      </div>
+    </div>
     <header class="top-bar">
       <button type="button" class="top-bar-icon top-bar-icon-farm" aria-label="Farm" data-link-key="farm">
         <span class="top-bar-icon-farm-lift" aria-hidden="true">
