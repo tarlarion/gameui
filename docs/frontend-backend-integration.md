@@ -55,13 +55,39 @@ Core behavior implementation:
     status: "Loading…",
     emulateMs: 1600
   },
-  start: {
-    title: "Ready to train?",
-    message: "Treelly is your training partner. Read the brief, then tap when you want to begin.",
-    ctaLabel: "Let's start",
-    autoOpen: true
-  },
-  progress: {
+    start: {
+      title: "Ready to train?",
+      message: "Treelly is your training partner. Read the brief, then tap when you want to begin.",
+      ctaLabel: "Let's start",
+      autoOpen: true
+    },
+    onboarding: {
+      enabled: true,
+      storageKey: "gameui_onboarding_v1",
+      nextLabel: "Next",
+      doneLabel: "Got it",
+      steps: [
+        {
+          target: "[data-onboarding-target='trainings']",
+          title: "Your trainings",
+          message: "Each icon is a different brain training — tap one to start playing.",
+          placement: "top"
+        },
+        {
+          target: "[data-onboarding-target='settings']",
+          title: "Settings",
+          message: "Adjust sound, language, reminders, and other preferences here.",
+          placement: "bottom"
+        },
+        {
+          target: "[data-onboarding-target='profile']",
+          title: "Your profile",
+          message: "Your avatar opens your profile — progress, rewards, and training history.",
+          placement: "bottom"
+        }
+      ]
+    },
+    progress: {
     screen: "",
     points: 0,
     goal: 100,
@@ -241,9 +267,30 @@ The popup dispatches the following events on `document`:
 1. `#loading-screen` is visible on first paint (`body.boot-locked` hides the game chrome).
 2. After `loading.emulateMs` and image preload, loading fades out.
 3. `#start-screen` shows `start.title`, `start.message`, and `start.ctaLabel` (**Let's start**).
-4. The CTA starts the speedometer session and unlocks the main UI.
+4. The CTA unlocks the main UI. On the **first visit only**, a three-step onboarding tour runs (gamebar → settings → profile) before the speedometer starts.
+5. After onboarding (or if it was already completed), the speedometer session begins.
 
 Skip the gate with `start.autoOpen: false`. Open it later via `window.GameUI.showStart()`.
+
+### Onboarding tooltips
+
+First-time users see a spotlight tour after **Let's start**:
+
+1. One **gamebar** item (example tab) — trainings.
+2. Top-right **settings** button.
+3. **Avatar** — profile.
+
+Config: `onboarding.enabled`, `onboarding.storageKey`, `onboarding.steps[]` (`target`, `title`, `message`, `placement`: `top` | `bottom`).
+
+DOM hooks: `data-onboarding-target="trainings" | "settings" | "profile"`.
+
+API:
+
+- `window.GameUI.startOnboarding(onComplete?)` — force the tour (calls `onComplete` when finished or skipped).
+- `window.GameUI.resetOnboarding()` — clears `localStorage` so the tour shows again.
+- `window.GameUI.hasCompletedOnboarding()` — boolean.
+
+Events: `gameui:onboardingopen`, `gameui:onboardingstep`, `gameui:onboardingclose`.
 
 ### DOM contract
 

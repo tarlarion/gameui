@@ -31,6 +31,13 @@
       ctaLabel: "Let's start",
       autoOpen: true,
     },
+    onboarding: {
+      enabled: true,
+      storageKey: "gameui_onboarding_v1",
+      nextLabel: "Next",
+      doneLabel: "Got it",
+      steps: [],
+    },
     progress: {
       screen: "",
       points: 0,
@@ -110,6 +117,19 @@
       ctaLabel: "Let's start",
       autoOpen: true,
       ...(window.GAME_UI_CONFIG?.start || {}),
+    },
+    onboarding: {
+      enabled: true,
+      storageKey: "gameui_onboarding_v1",
+      nextLabel: "Next",
+      doneLabel: "Got it",
+      steps: [],
+      ...(window.GAME_UI_CONFIG?.onboarding || {}),
+      steps:
+        Array.isArray(window.GAME_UI_CONFIG?.onboarding?.steps) &&
+        window.GAME_UI_CONFIG.onboarding.steps.length > 0
+          ? window.GAME_UI_CONFIG.onboarding.steps
+          : [],
     },
     progress: {
       screen: "",
@@ -824,7 +844,236 @@
     if (shouldOpenProgressScreen()) open();
   }
 
-  function setupBootScreens() {
+  function setupOnboarding() {
+    const overlayNode = document.querySelector("#onboarding-overlay");
+    const spotlightNode = document.querySelector("#onboarding-spotlight");
+    const tooltipNode = document.querySelector("#onboarding-tooltip");
+    const stepNode = document.querySelector("#onboarding-tooltip-step");
+    const titleNode = document.querySelector("#onboarding-tooltip-title");
+    const messageNode = document.querySelector("#onboarding-tooltip-message");
+    const ctaNode = document.querySelector("#onboarding-tooltip-cta");
+
+    const steps = Array.isArray(config.onboarding.steps) ? config.onboarding.steps : [];
+    let stepIndex = 0;
+    let isOpen = false;
+    let onCompleteCallback = null;
+    let resizeObserver = null;
+
+    function isCompleted() {
+      if (config.onboarding.enabled === false) return true;
+      try {
+        return window.localStorage.getItem(config.onboarding.storageKey) === "done";
+      } catch {
+        return false;
+      }
+    }
+
+    function clearCompleted() {
+      try {
+        window.localStorage.removeItem(config.onboarding.storageKey);
+      } catch {
+        /* ignore quota / private mode */
+      }
+    }
+
+    function markCompleted() {
+      try {
+        window.localStorage.setItem(config.onboarding.storageKey, "done");
+      } catch {
+        /* ignore quota / private mode */
+      }
+    }
+
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("reset-onboarding")) clearCompleted();
+    } catch {
+      /* ignore */
+    }
+
+    function shouldRun() {
+      return config.onboarding.enabled !== false && steps.length > 0 && !isCompleted();
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function positionForTarget(target, placement) {
+      if (!spotlightNode || !tooltipNode || !target) return;
+
+      const padding = 10;
+      const gap = 14;
+      const rect = target.getBoundingClientRect();
+      const viewportPad = 16;
+
+      spotlightNode.style.left = `${rect.left - padding}px`;
+      spotlightNode.style.top = `${rect.top - padding}px`;
+      spotlightNode.style.width = `${rect.width + padding * 2}px`;
+      spotlightNode.style.height = `${rect.height + padding * 2}px`;
+
+      tooltipNode.style.visibility = "hidden";
+      tooltipNode.style.left = "0";
+      tooltipNode.style.top = "0";
+
+      window.requestAnimationFrame(() => {
+        const tipRect = tooltipNode.getBoundingClientRect();
+        let left = rect.left + rect.width / 2 - tipRect.width / 2;
+        let top = rect.bottom + gap;
+
+        if (placement === "top") {
+          top = rect.top - gap - tipRect.height;
+        }
+
+        left = clamp(left, viewportPad, window.innerWidth - tipRect.width - viewportPad);
+        top = clamp(top, viewportPad, window.innerHeight - tipRect.height - viewportPad);
+
+        tooltipNode.style.left = `${left}px`;
+        tooltipNode.style.top = `${top}px`;
+        tooltipNode.style.visibility = "visible";
+      });
+    }
+
+    function renderStep() {
+      const step = steps[stepIndex];
+      if (!step || !overlayNode) return;
+
+      const target = document.querySelector(step.target);
+      if (!target) {
+        stepIndex += 1;
+        if (stepIndex >= steps.length) {
+          close(true);
+          return;
+        }
+        renderStep();
+        return;
+      }
+
+      const title = typeof step.title === "string" ? step.title : "";
+      const message = typeof step.message === "string" ? step.message : "";
+      const placement = step.placement === "top" ? "top" : "bottom";
+      const isLast = stepIndex >= steps.length - 1;
+
+      if (titleNode) titleNode.textContent = title;
+      if (messageNode) messageNode.textContent = message;
+      if (stepNode) {
+        stepNode.textContent = `${stepIndex + 1} / ${steps.length}`;
+        stepNode.hidden = steps.length <= 1;
+      }
+      if (ctaNode) {
+        ctaNode.textContent = isLast ? config.onboarding.doneLabel : config.onboarding.nextLabel;
+      }
+
+      target.setAttribute("data-onboarding-active", "true");
+      steps.forEach((_, index) => {
+        if (index === stepIndex) return;
+        const node = document.querySelector(steps[index].target);
+        node?.removeAttribute("data-onboarding-active");
+      });
+
+      positionForTarget(target, placement);
+      document.dispatchEvent(
+        new CustomEvent("gameui:onboardingstep", {
+          detail: { index: stepIndex, total: steps.length, target: step.target },
+        }),
+      );
+    }
+
+    function open(onComplete) {
+      if (!overlayNode || !shouldRun() || isOpen) {
+        if (typeof onComplete === "function") onComplete();
+        return false;
+      }
+
+      onCompleteCallback = typeof onComplete === "function" ? onComplete : null;
+      stepIndex = 0;
+      isOpen = true;
+      overlayNode.hidden = false;
+      overlayNode.setAttribute("aria-hidden", "false");
+      document.body.classList.add("onboarding-active");
+      document.dispatchEvent(new CustomEvent("gameui:onboardingopen"));
+      renderStep();
+
+      if (!resizeObserver && window.ResizeObserver) {
+        resizeObserver = new ResizeObserver(() => {
+          if (!isOpen) return;
+          const step = steps[stepIndex];
+          if (!step) return;
+          const target = document.querySelector(step.target);
+          if (target) positionForTarget(target, step.placement === "top" ? "top" : "bottom");
+        });
+        resizeObserver.observe(document.body);
+      }
+
+      window.requestAnimationFrame(() => ctaNode?.focus());
+      return true;
+    }
+
+    function close(markDone) {
+      if (!overlayNode || !isOpen) return;
+      isOpen = false;
+      overlayNode.hidden = true;
+      overlayNode.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("onboarding-active");
+      steps.forEach((step) => {
+        document.querySelector(step.target)?.removeAttribute("data-onboarding-active");
+      });
+      if (markDone) markCompleted();
+      document.dispatchEvent(new CustomEvent("gameui:onboardingclose", { detail: { completed: Boolean(markDone) } }));
+      const callback = onCompleteCallback;
+      onCompleteCallback = null;
+      callback?.();
+    }
+
+    function advance() {
+      if (!isOpen) return;
+      if (stepIndex >= steps.length - 1) {
+        close(true);
+        return;
+      }
+      document.querySelector(steps[stepIndex].target)?.removeAttribute("data-onboarding-active");
+      stepIndex += 1;
+      renderStep();
+      window.requestAnimationFrame(() => ctaNode?.focus());
+    }
+
+    ctaNode?.addEventListener("click", () => advance());
+
+    document.addEventListener("keydown", (event) => {
+      if (!isOpen) return;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close(true);
+        return;
+      }
+      if (event.key === "Enter" || event.key === " ") {
+        if (document.activeElement === ctaNode) return;
+        event.preventDefault();
+        advance();
+      }
+    });
+
+    window.addEventListener(
+      "resize",
+      () => {
+        if (!isOpen) return;
+        const step = steps[stepIndex];
+        if (!step) return;
+        const target = document.querySelector(step.target);
+        if (target) positionForTarget(target, step.placement === "top" ? "top" : "bottom");
+      },
+      { passive: true },
+    );
+
+    window.GameUI = window.GameUI || {};
+    window.GameUI.startOnboarding = open;
+    window.GameUI.resetOnboarding = clearCompleted;
+    window.GameUI.hasCompletedOnboarding = isCompleted;
+
+    return { open, shouldRun };
+  }
+
+  function setupBootScreens(onboardingApi) {
     const loadingNode = document.querySelector("#loading-screen");
     const startNode = document.querySelector("#start-screen");
     const statusNode = loadingNode?.querySelector("#loading-status");
@@ -890,8 +1139,17 @@
       if (hasStarted) return;
       hasStarted = true;
       closeStart();
-      void setupSpeedometer();
       document.dispatchEvent(new CustomEvent("gameui:start"));
+
+      const startMainUi = () => {
+        void setupSpeedometer();
+      };
+      const closeMs = Math.max(0, Number(config.animations.progressCloseMs) || 220);
+
+      window.setTimeout(() => {
+        const didOpenOnboarding = onboardingApi?.open?.(startMainUi);
+        if (!didOpenOnboarding) startMainUi();
+      }, closeMs);
     }
 
     function emulateLoading() {
@@ -966,5 +1224,6 @@
   void setupStreak();
   void setupGamebar();
   setupProgressPopup();
-  setupBootScreens();
+  const onboardingApi = setupOnboarding();
+  setupBootScreens(onboardingApi);
 })();

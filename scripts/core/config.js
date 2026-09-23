@@ -42,6 +42,32 @@
       ctaLabel: "Let's start",
       autoOpen: true,
     },
+    onboarding: {
+      enabled: true,
+      storageKey: "gameui_onboarding_v1",
+      nextLabel: "Next",
+      doneLabel: "Got it",
+      steps: [
+        {
+          target: "[data-onboarding-target='trainings']",
+          title: "Your trainings",
+          message: "Each icon is a different brain training — tap one to start playing.",
+          placement: "top",
+        },
+        {
+          target: "[data-onboarding-target='settings']",
+          title: "Settings",
+          message: "Adjust sound, language, reminders, and other preferences here.",
+          placement: "bottom",
+        },
+        {
+          target: "[data-onboarding-target='profile']",
+          title: "Your profile",
+          message: "Your avatar opens your profile — progress, rewards, and training history.",
+          placement: "bottom",
+        },
+      ],
+    },
     progress: {
       screen: "",
       points: 87,

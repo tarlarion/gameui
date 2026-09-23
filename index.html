@@ -47,12 +47,18 @@
         </span>
       </button>
       <div class="top-bar-user">
-        <div class="avatar" aria-label="User avatar">
+        <div class="avatar" aria-label="User avatar" data-onboarding-target="profile">
           <img class="avatar-img" src="./assets/images/avatar-placeholder.png" alt="User avatar" />
         </div>
         <span class="username">alex</span>
       </div>
-      <button type="button" class="top-bar-icon top-bar-icon-settings" aria-label="Settings" data-link-key="settings">
+      <button
+        type="button"
+        class="top-bar-icon top-bar-icon-settings"
+        aria-label="Settings"
+        data-link-key="settings"
+        data-onboarding-target="settings"
+      >
         <span class="top-bar-icon-settings-lift" aria-hidden="true">
           <span class="top-bar-icon-settings-pivot">
             <img class="top-bar-icon-img" src="./assets/icons/settings.svg" alt="" />
@@ -89,7 +95,14 @@
       </section>
     </main>
     <footer class="gamebar" aria-label="Bottom navigation">
-      <div class="bottom-bar-item" role="button" tabindex="0" aria-label="Home" data-gamebar-key="home">
+      <div
+        class="bottom-bar-item"
+        role="button"
+        tabindex="0"
+        aria-label="Home"
+        data-gamebar-key="home"
+        data-onboarding-target="trainings"
+      >
         <img class="bottom-bar-item-icon" src="./assets/images/gamebar-image-memory.png" alt="Memory" />
         <span class="bottom-bar-item-bonus" aria-hidden="true">+5</span>
         <span class="bottom-bar-item-counter">12</span>
@@ -195,6 +208,22 @@
           <p class="progress-popup-message" id="progress-popup-message">Отличная тренировка!</p>
           <button type="button" class="progress-popup-cta" data-progress-action="close">Продолжить</button>
         </div>
+      </div>
+    </div>
+    <div class="onboarding" id="onboarding-overlay" hidden aria-hidden="true">
+      <div class="onboarding-spotlight" id="onboarding-spotlight" aria-hidden="true"></div>
+      <div
+        class="onboarding-tooltip"
+        id="onboarding-tooltip"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="onboarding-tooltip-title"
+        aria-describedby="onboarding-tooltip-message"
+      >
+        <p class="onboarding-tooltip-step" id="onboarding-tooltip-step" aria-hidden="true"></p>
+        <h2 class="onboarding-tooltip-title" id="onboarding-tooltip-title"></h2>
+        <p class="onboarding-tooltip-message" id="onboarding-tooltip-message"></p>
+        <button type="button" class="onboarding-tooltip-cta" id="onboarding-tooltip-cta">Next</button>
       </div>
     </div>
     <script src="./scripts/core/config.js" defer></script>

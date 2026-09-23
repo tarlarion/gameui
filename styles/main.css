@@ -208,6 +208,109 @@ body.boot-locked > .gamebar {
   }
 }
 
+body.onboarding-active {
+  overflow: hidden;
+}
+
+.onboarding[hidden] {
+  display: none;
+}
+
+.onboarding {
+  position: fixed;
+  inset: 0;
+  z-index: 105;
+  pointer-events: auto;
+}
+
+.onboarding-spotlight {
+  position: fixed;
+  border-radius: 16px;
+  box-shadow: 0 0 0 9999px rgba(14, 18, 32, 0.78);
+  pointer-events: none;
+  z-index: 0;
+  transition:
+    left 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    top 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.onboarding-tooltip {
+  position: fixed;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(143, 224, 168, 0.28);
+  background: linear-gradient(165deg, rgba(28, 36, 58, 0.98) 0%, rgba(18, 22, 38, 0.98) 100%);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.45),
+    0 0 24px rgba(74, 157, 92, 0.12);
+  animation: boot-overlay-in var(--anim-boot-open) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.onboarding-tooltip-step {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8fe0a8;
+}
+
+.onboarding-tooltip-title {
+  margin: 0;
+  font-family: var(--font-accent);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #e8e8f0;
+}
+
+.onboarding-tooltip-message {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #c8c8d8;
+}
+
+.onboarding-tooltip-cta {
+  align-self: flex-start;
+  min-width: 120px;
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 10px 22px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 700;
+  color: #f4fdf6;
+  background: linear-gradient(160deg, #5a9f6b 0%, #3d7a4d 42%, #2d5c3a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow:
+    0 2px 0 #1a3d28,
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition: transform 120ms ease, background 120ms ease;
+}
+
+.onboarding-tooltip-cta:hover,
+.onboarding-tooltip-cta:focus-visible {
+  background: linear-gradient(160deg, #6cb37d 0%, #4a8f5c 45%, #356d44 100%);
+  transform: translateY(-1px);
+  outline: 2px solid #8fe0a8;
+  outline-offset: 2px;
+}
+
+[data-onboarding-active] {
+  position: relative;
+  z-index: 106;
+}
+
 .font-accent {
   font-family: var(--font-accent);
 }
